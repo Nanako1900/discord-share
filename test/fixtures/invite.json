@@ -1,0 +1,70 @@
+{
+    "type": 0,
+    "code": "XmuHsQYX",
+    "expires_at": "2026-10-21T15:04:03+00:00",
+    "id": "1562119214955892786",
+    "guild": {
+        "id": "1114391825336250432",
+        "name": "Nanako‘s Community",
+        "splash": "a77ff53d4950ca8eec961cde606ba91f",
+        "banner": null,
+        "description": null,
+        "icon": "42e0892e057eccdf8f50765cef3fbfd8",
+        "features": [
+            "VIDEO_QUALITY_720_60FPS",
+            "COMMUNITY",
+            "NEWS",
+            "ANIMATED_ICON",
+            "ENABLED_MODERATION_EXPERIENCE_FOR_NON_COMMUNITY",
+            "VIDEO_BITRATE_ENHANCED",
+            "SOUNDBOARD",
+            "STAGE_CHANNEL_VIEWERS_50",
+            "INVITE_SPLASH",
+            "AUDIO_BITRATE_128_KBPS",
+            "TIERLESS_BOOSTING",
+            "TIERLESS_BOOSTING_SYSTEM_MESSAGE",
+            "GUESTS_ENABLED"
+        ],
+        "verification_level": 2,
+        "vanity_url_code": null,
+        "nsfw_level": 0,
+        "nsfw": false,
+        "premium_subscription_count": 2,
+        "premium_tier": 1
+    },
+    "guild_id": "1114391825336250432",
+    "channel": {
+        "id": "1114391825336250435",
+        "type": 0,
+        "name": "speak-here"
+    },
+    "profile": {
+        "id": "1114391825336250432",
+        "name": "Nanako‘s Community",
+        "icon_hash": "42e0892e057eccdf8f50765cef3fbfd8",
+        "member_count": 131,
+        "online_count": 20,
+        "description": null,
+        "brand_color_primary": "#4fe2ca",
+        "banner_hash": null,
+        "game_application_ids": [
+            "700136079562375258"
+        ],
+        "game_activity": {},
+        "tag": null,
+        "badge": 0,
+        "badge_color_primary": "#ff0000",
+        "badge_color_secondary": "#800000",
+        "badge_hash": null,
+        "traits": [],
+        "features": [
+            "COMMUNITY"
+        ],
+        "visibility": 1,
+        "custom_banner_hash": null,
+        "premium_subscription_count": 2,
+        "premium_tier": 1
+    },
+    "approximate_member_count": 131,
+    "approximate_presence_count": 20
+}

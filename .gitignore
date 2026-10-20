@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+.dev.vars*
+coverage/
+.omc/
+.DS_Store
+.claude/settings.local.json
+design/

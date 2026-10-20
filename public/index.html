@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Discord 服务器</title>
+		<meta name="description" content="加入我们的 Discord 服务器" />
+		<link rel="canonical" href="https://discord.nanako.org/" />
+		<meta name="theme-color" content="#f3f6fa" />
+		<meta name="color-scheme" content="light" />
+
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="discord.nanako.org" />
+		<meta property="og:title" content="Discord 服务器" />
+		<meta property="og:description" content="加入我们的 Discord 服务器" />
+		<meta property="og:url" content="https://discord.nanako.org/" />
+		<meta property="og:image" content="" />
+		<meta name="twitter:card" content="summary" />
+		<meta name="twitter:title" content="Discord 服务器" />
+		<meta name="twitter:description" content="加入我们的 Discord 服务器" />
+		<meta name="twitter:image" content="" />
+
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<link rel="preconnect" href="https://cdn.discordapp.com" />
+		<link rel="stylesheet" href="/styles.css" />
+		<!-- Filled by the Worker with the current snapshot (see src/index.ts) -->
+		<script id="initial-data" type="application/json">null</script>
+		<script src="/app.js" type="module"></script>
+	</head>
+	<body>
+		<main class="stage" data-layout="single">
+			<!-- Identity card -->
+			<article class="card card--identity" data-state="loading" aria-labelledby="guild-name" aria-busy="true">
+				<div class="cover">
+					<div class="cover__window">
+						<img class="cover__img" alt="" width="960" height="540" hidden />
+					</div>
+					<div class="coin">
+						<img class="coin__img" alt="" width="96" height="96" hidden />
+						<span class="coin__initial" aria-hidden="true"></span>
+					</div>
+					<span class="cover__tag" id="guild-tag" hidden></span>
+				</div>
+
+				<header class="identity">
+					<h1 class="identity__name" id="guild-name" tabindex="-1">Discord 服务器</h1>
+					<p class="identity__since" id="guild-since"></p>
+					<p class="identity__description" id="guild-description" hidden></p>
+				</header>
+
+				<div class="card__error" hidden>
+					<p role="alert">暂时无法获取服务器信息</p>
+					<button class="key key--small" id="retry" type="button">重试</button>
+				</div>
+
+				<div class="gauges">
+					<div class="gauge">
+						<span class="gauge__value" data-count="members"><span aria-hidden="true">—</span><span class="sr-only">未知</span></span>
+						<span class="gauge__label">成员</span>
+					</div>
+					<div class="gauge">
+						<span class="gauge__value" data-count="online"><span aria-hidden="true">—</span><span class="sr-only">未知</span></span>
+						<span class="gauge__label"><span class="led" data-status="offline" aria-hidden="true"></span>在线</span>
+					</div>
+					<div class="gauge" id="voice-gauge">
+						<span class="gauge__value" data-count="voice"><span aria-hidden="true">—</span><span class="sr-only">未知</span></span>
+						<span class="gauge__label">语音中</span>
+					</div>
+				</div>
+
+				<div class="actions">
+					<a class="key key--primary" id="join" rel="noopener noreferrer" role="link" aria-disabled="true">
+						加入服务器
+					</a>
+					<button class="key" id="copy" type="button" disabled>复制邀请链接</button>
+				</div>
+				<p class="invite-hint">
+					<code id="invite-text"></code>
+					<span class="invite-none" id="invite-none" hidden>邀请链接暂不可用</span>
+					<span id="copy-status" role="status" aria-live="polite"></span>
+				</p>
+
+				<hr class="groove" />
+
+				<dl class="facts" id="facts"></dl>
+
+				<div class="shelf" id="games" hidden>
+					<h2 class="label">常玩游戏</h2>
+					<ul class="chips" id="games-list"></ul>
+				</div>
+
+				<div class="shelf" id="features" hidden>
+					<h2 class="label">服务器功能</h2>
+					<ul class="stamps" id="features-list"></ul>
+				</div>
+
+				<footer class="card__foot">
+					<time id="updated"></time>
+					<span class="card__stale" id="stale-note" hidden>数据可能有延迟</span>
+				</footer>
+			</article>
+
+			<!-- Live card (widget) -->
+			<article class="card card--live" id="live" aria-labelledby="live-title" hidden>
+				<header class="live__head">
+					<h2 class="live__title" id="live-title"><span class="led" data-status="offline" aria-hidden="true"></span>实时动态</h2>
+					<span class="live__sub" id="live-sub"></span>
+				</header>
+
+				<div class="live__section">
+					<h3 class="label">语音频道</h3>
+					<ul class="voice-list" id="voice-list"></ul>
+					<p class="live__empty" id="voice-empty" hidden>暂无语音频道</p>
+				</div>
+
+				<div class="live__section live__section--members">
+					<div class="live__section-head">
+						<h3 class="label">在线成员</h3>
+						<ul class="status-summary" id="status-summary"></ul>
+					</div>
+					<p class="playing" id="playing" hidden></p>
+					<div class="well well--scroll" role="region" tabindex="0" aria-label="在线成员列表">
+						<ul class="member-grid" id="member-grid"></ul>
+					</div>
+					<p class="live__empty" id="member-empty" hidden>暂无在线成员</p>
+					<p class="member-more" id="member-more" hidden></p>
+				</div>
+			</article>
+		</main>
+	</body>
+</html>

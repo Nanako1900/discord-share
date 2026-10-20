@@ -1,0 +1,1895 @@
+/* Nanako's Community — invite page
+   Direction "Frost": quiet, cool, light panes on a blue-grey desk.
+   Depth comes from hairlines, a top sheen and long low shadows — never from
+   texture, bevels or heavy slabs. Brand teal is reserved for small signals
+   (status lights, focus, the active voice channel, a tick on the rules). */
+
+/* ── Tokens ─────────────────────────────────────────────── */
+:root {
+	color-scheme: light;
+
+	/* Desk (cool blue-grey, hue 238–252, very low chroma) */
+	--bg-top: oklch(97.2% 0.006 250); /* #f3f6fa */
+	--bg-bottom: oklch(94.2% 0.011 252); /* #e7ecf3 */
+	--bg-pool-ice: oklch(93.4% 0.02 240);
+	--bg-pool-aqua: oklch(94.4% 0.016 215);
+
+	/* Panes */
+	--pane-hi: oklch(100% 0 0 / 0.92);
+	--pane-lo: oklch(99.3% 0.003 250 / 0.84);
+	--pane-edge: oklch(100% 0 0 / 0.9);
+
+	/* Surfaces inside a pane */
+	--inset: oklch(96.5% 0.007 252); /* recessed: stats, lists, wells (#f0f4f8) */
+	--inset-soft: oklch(96.5% 0.007 252 / 0.6);
+	--raised: oklch(100% 0 0 / 0.9); /* chips, pills, busy voice rows */
+	--hairline: oklch(40% 0.03 255 / 0.1);
+	--hairline-strong: oklch(40% 0.03 255 / 0.16);
+
+	/* Ink (worst case = pane bottom over the desk ≈ #f8fafd; inset #f0f4f8) */
+	--ink: oklch(25% 0.025 258); /* #1a222e  15.2:1 */
+	--ink-2: oklch(41% 0.024 258); /* #424b58   8.4:1 */
+	--ink-3: oklch(49.5% 0.022 255); /* #5a636e   5.9:1 pane, 5.5:1 inset */
+	--ink-quiet: oklch(72% 0.018 255); /* decorative glyphs only */
+
+	/* Primary action: calm slate blue, white text 7.4:1 (top) – 8.6:1 (bottom) */
+	--key-hi: oklch(45% 0.054 255);
+	--key-lo: oklch(41.5% 0.052 256);
+	--key-ink: oklch(99% 0.003 250);
+
+	/* Brand — overridden at runtime with the server colour by app.js.
+	   Derived shades fix lightness/chroma and borrow only the hue, so any
+	   guild colour keeps the same contrast. */
+	--brand: #4fe2ca;
+	--brand-deep: oklch(from var(--brand) 49% 0.068 calc(h + 20)); /* #276c70 focus, 5.8:1 */
+	--brand-ink: oklch(from var(--brand) 45% 0.08 h); /* #066357 on tint 6.7:1 */
+	--brand-tint: color-mix(in oklch, var(--brand) 15%, white);
+	--brand-line: color-mix(in oklch, var(--brand) 45%, transparent);
+	--focus: var(--brand-deep);
+
+	/* Status lights: ≥ 3:1 against their white ring, and each has its own shape
+	   (solid dot / crescent / bar) so colour is never the only cue. */
+	--led-online: oklch(61% 0.155 158); /* #009e5d  3.4:1 */
+	--led-idle: oklch(66% 0.15 66); /* #cf7b00  3.1:1 */
+	--led-dnd: oklch(60% 0.2 25); /* #de3b3d  4.2:1 */
+	--led-offline: oklch(60% 0.015 255);
+	--led-cut: oklch(99% 0.003 250); /* the ring / pane colour the shapes are cut with */
+	--ok-ink: oklch(48% 0.11 160); /* #007047  5.9:1 */
+	--warn-ink: oklch(50% 0.11 65); /* #8d5406  5.9:1 */
+	--warn-dot: oklch(76% 0.14 70);
+	--error-ink: oklch(45% 0.13 25); /* on --error-bg 7.1:1 */
+	--error-bg: oklch(97% 0.014 20);
+	--error-line: oklch(62% 0.12 25 / 0.22);
+
+	/* Depth */
+	--shadow-pane:
+		0 0 0 1px oklch(40% 0.035 255 / 0.06),
+		0 1px 2px oklch(40% 0.035 255 / 0.05),
+		0 12px 28px -14px oklch(38% 0.05 255 / 0.16),
+		0 40px 80px -40px oklch(38% 0.06 255 / 0.22);
+	--shadow-raised:
+		0 0 0 1px oklch(40% 0.035 255 / 0.07),
+		0 1px 2px oklch(40% 0.035 255 / 0.07);
+	--sheen: inset 0 1px 0 oklch(100% 0 0 / 0.9);
+
+	/* Type — system stacks only (CSP font-src 'self', no web fonts) */
+	--font-sans: system-ui, -apple-system, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+		"Noto Sans CJK SC", sans-serif;
+	--font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+	/* Sized by the identity card (cqi), not the window, so a narrow split column scales too */
+	--text-name: clamp(1.25rem, 0.875rem + 2.5cqi, 1.5rem);
+	--text-name-long: 1.25rem;
+	--text-stat: clamp(1.1rem, 1rem + 0.35vw, 1.22rem);
+	--text-title: 0.9375rem;
+	--text-body: 0.875rem;
+	--text-sm: 0.8125rem;
+	--text-xs: 0.75rem;
+
+	/* Shape: a radius scale, concentric where things nest */
+	--radius-card: 20px;
+	--radius-cover: 14px; /* card − cover inset */
+	--radius-panel: 13px;
+	--radius-key: 11px;
+	--radius-chip: 9px;
+	--radius-stamp: 6px;
+
+	/* Space */
+	--pad: clamp(16px, 4.4vw, 22px);
+	--cover-inset: 6px;
+	--coin: clamp(3.5rem, 3.125rem + 1.4vw, 4rem); /* 56–64px, grows with the text size */
+	--coin-drop: 0.56; /* share of the icon hanging below the cover */
+	--gap-group: 18px;
+	--gap-tight: 8px;
+	--gap-actions: 14px;
+	--gap-facts: 12px;
+	/* The copy toast sits centred on this rule: rem, so the room above and below
+	   grows with the text and the toast never reaches the link or the facts. */
+	--rule-above: 1.25rem;
+	--rule-below: 1rem;
+	--foot-gap: 20px;
+	--page-pad-block: clamp(12px, 6vh, 64px);
+	--well-pad: 4px;
+	--row: 2.5rem; /* member row height */
+	--tray-min: calc(var(--row) * 3.5 + var(--well-pad) * 2 + 2px); /* a flexible tray never gets shorter */
+	--tick: 20px; /* brand tick on rules */
+
+	/* Motion */
+	--ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+	--duration-fast: 140ms;
+}
+
+/* Engines without container units size the name by the window instead. */
+@supports not (width: 1cqi) {
+	:root {
+		--text-name: clamp(1.3rem, 1.12rem + 0.8vw, 1.5rem);
+	}
+}
+
+/* Engines without relative colour syntax get fixed deep teals. */
+@supports not (color: oklch(from red l c h)) {
+	:root {
+		--brand-deep: #276c70;
+		--brand-ink: #066357;
+	}
+}
+
+/* ── Base ───────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+[hidden] {
+	display: none !important;
+}
+
+html {
+	-webkit-text-size-adjust: 100%;
+	background: var(--bg-bottom);
+}
+
+body {
+	margin: 0;
+	min-height: 100dvh;
+	display: grid;
+	place-items: center;
+	padding: var(--page-pad-block) clamp(12px, 3vw, 32px);
+	color: var(--ink);
+	font-family: var(--font-sans);
+	font-size: var(--text-body);
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+/* The desk: a cool vertical wash, a soft top light and two barely-there pools. */
+body::before {
+	content: "";
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background:
+		radial-gradient(56rem 30rem at 50% -6%, oklch(100% 0 0 / 0.75), transparent 70%),
+		radial-gradient(40rem 28rem at 10% 30%, var(--bg-pool-ice), transparent 70%),
+		radial-gradient(40rem 30rem at 92% 92%, var(--bg-pool-aqua), transparent 70%),
+		linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+dl,
+dd {
+	margin: 0;
+}
+
+ul {
+	padding: 0;
+	list-style: none;
+}
+
+img {
+	display: block;
+	max-width: 100%;
+}
+
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+/* ── Layout: one centred column, or a quiet split ───────── */
+.stage {
+	width: 100%;
+	max-width: 26.25rem; /* 420px */
+	display: grid;
+	gap: 14px;
+	align-items: start;
+}
+
+/* Side by side from tablet portrait (768px) up; the identity column stays
+   card-sized and the live card takes the rest. */
+@media (min-width: 47.5rem) {
+	.stage[data-layout="split"] {
+		max-width: 55rem; /* 880px */
+		grid-template-columns: minmax(0, 21.5rem) minmax(0, 1fr);
+		gap: 16px;
+		align-items: stretch;
+	}
+
+	/* Two ways to sit side by side, chosen by app.js (data-fit) from the cards'
+	   natural heights:
+	   - stretch (default): the heights are close, or the member tray can make up
+	     the difference. Both cards share one height and end on matching footer
+	     strips; the tray takes whatever height the identity card leaves
+	     (shrinking to 3½ rows and scrolling, or growing to its whole list).
+	   - short-live / short-identity: one card is clearly taller even after that.
+	     Both cards are top-aligned and each ends on its own footer, so the shorter
+	     one never shows a band of blank pane. */
+	.stage[data-layout="split"] .card--identity {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.stage[data-layout="split"]:not([data-fit^="short"]) .card--identity::after {
+		content: "";
+		order: 1;
+		flex: 1 1 0;
+	}
+
+	.stage[data-layout="split"] .card__foot {
+		order: 2;
+	}
+
+	.stage[data-layout="split"] .live__section--members {
+		flex: 1 1 auto;
+		min-height: 0;
+	}
+
+	/* Side by side, the tray keeps its wheel scrolling to itself and never drops
+	   below 3½ rows (or its whole list, if shorter). --tray-content is the list
+	   height, measured by app.js. */
+	.stage[data-layout="split"] .well--scroll {
+		--tray-full: calc(var(--tray-content, 100vh) + var(--well-pad) * 2 + 2px);
+		min-height: min(var(--tray-min), var(--tray-full));
+		overscroll-behavior: contain;
+	}
+
+	/* Stretch: size containment makes the tray count as its minimum, then its
+	   grid row stretches it up to the full list. */
+	.stage[data-layout="split"]:not([data-fit^="short"]) .well--scroll {
+		align-self: stretch;
+		contain: size;
+		max-height: var(--tray-full);
+	}
+
+	.stage[data-layout="split"][data-fit^="short"] {
+		align-items: start;
+	}
+
+	/* The live card is the short one even with every member showing: show them all. */
+	.stage[data-layout="split"][data-fit="short-live"] .well--scroll {
+		max-height: var(--tray-full);
+	}
+}
+
+/* Desktop: a wider identity column */
+@media (min-width: 57.5rem) {
+	.stage[data-layout="split"] {
+		grid-template-columns: 23rem minmax(0, 1fr);
+	}
+}
+
+/* ── Panes ──────────────────────────────────────────────── */
+.card {
+	position: relative;
+	isolation: isolate;
+	min-width: 0;
+	border: 1px solid var(--pane-edge);
+	border-radius: var(--radius-card);
+	background: linear-gradient(180deg, var(--pane-hi), var(--pane-lo));
+	box-shadow: var(--shadow-pane);
+	animation: rise 520ms var(--ease-out) both;
+}
+
+/* A faint diagonal reflection across the top-left of each pane */
+.card::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: inherit;
+	background: linear-gradient(118deg, oklch(100% 0 0 / 0.55) 0%, oklch(100% 0 0 / 0) 32%);
+	pointer-events: none;
+}
+
+.card--identity {
+	container: identity / inline-size;
+	padding-bottom: var(--pad);
+}
+
+.card--live {
+	container: live / inline-size;
+	display: flex;
+	flex-direction: column;
+	padding: 14px var(--pad) var(--pad);
+	animation-delay: 70ms;
+}
+
+.label {
+	color: var(--ink-3);
+	font-size: var(--text-xs);
+	font-weight: 600;
+	letter-spacing: 0.06em;
+}
+
+/* Rule with a short brand tick at its start */
+.groove {
+	height: 2px;
+	margin: var(--rule-above) var(--pad) var(--rule-below);
+	border: 0;
+	background:
+		linear-gradient(var(--brand), var(--brand)) left center / var(--tick) 2px no-repeat,
+		linear-gradient(90deg, var(--hairline-strong) 60%, transparent) left center / 100% 1px no-repeat;
+}
+
+/* ── Cover band + icon tile ─────────────────────────────── */
+.cover {
+	position: relative;
+	padding: var(--cover-inset) var(--cover-inset) 0;
+}
+
+.cover__window {
+	position: relative;
+	overflow: hidden;
+	aspect-ratio: 3 / 1;
+	border-radius: var(--radius-cover);
+	background:
+		radial-gradient(70% 140% at 10% 0%, color-mix(in oklch, var(--brand) 14%, transparent), transparent 70%),
+		radial-gradient(60% 120% at 92% 100%, oklch(86% 0.035 262 / 0.6), transparent 70%),
+		linear-gradient(135deg, oklch(93% 0.016 240), oklch(86% 0.024 252));
+}
+
+/* A slightly thinner band once the card is roomy */
+@container identity (width >= 22rem) {
+	.cover__window {
+		aspect-ratio: 3.4 / 1;
+	}
+}
+
+/* Server art is shown as a cool monochrome band (grey image under a blue-grey
+   veil), so any banner — warm, loud or busy — sits quietly in the palette. */
+.cover__img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: center 45%;
+	filter: grayscale(1) contrast(0.92) brightness(1.04);
+}
+
+.cover__window::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: linear-gradient(180deg, oklch(80% 0.04 245 / 0.28), oklch(36% 0.05 255 / 0.34));
+	box-shadow: inset 0 0 0 1px oklch(30% 0.03 255 / 0.08);
+	pointer-events: none;
+}
+
+.cover__window:has(.cover__img[hidden])::after {
+	background: none;
+}
+
+.coin {
+	position: absolute;
+	left: var(--pad);
+	bottom: calc(var(--coin) * var(--coin-drop) * -1);
+	display: grid;
+	width: var(--coin);
+	height: var(--coin);
+	padding: 3px;
+	border-radius: calc(var(--coin) * 0.28);
+	background: oklch(100% 0 0 / 0.96);
+	box-shadow:
+		0 0 0 1px oklch(40% 0.035 255 / 0.08),
+		0 8px 18px -8px oklch(35% 0.06 255 / 0.36);
+}
+
+.coin__img,
+.coin__initial {
+	grid-area: 1 / 1;
+	width: 100%;
+	height: 100%;
+	border-radius: calc(var(--coin) * 0.28 - 3px);
+}
+
+.coin__img {
+	object-fit: cover;
+	background: var(--inset);
+}
+
+.coin__initial {
+	display: grid;
+	place-items: center;
+	background: linear-gradient(150deg, oklch(55% 0.045 252), oklch(42% 0.045 258));
+	color: oklch(98% 0.005 250);
+	font-size: calc(var(--coin) * 0.4);
+	font-weight: 650;
+}
+
+.coin__initial:empty {
+	display: none;
+}
+
+/* Nothing loaded yet (loading / error): an inset tile with a quiet chat glyph */
+.coin:has(.coin__img[hidden]):has(.coin__initial:empty)::before {
+	content: "";
+	grid-area: 1 / 1;
+	border-radius: calc(var(--coin) * 0.28 - 3px);
+	background: var(--inset);
+	box-shadow: inset 0 0 0 1px var(--hairline);
+}
+
+.coin:has(.coin__img[hidden]):has(.coin__initial:empty)::after {
+	content: "";
+	grid-area: 1 / 1;
+	place-self: center;
+	width: 44%;
+	height: 44%;
+	background: var(--ink-quiet);
+	-webkit-mask: var(--glyph-chat) center / contain no-repeat;
+	mask: var(--glyph-chat) center / contain no-repeat;
+	--glyph-chat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z'/%3E%3Cpath d='M9 10h.01M12 10h.01M15 10h.01'/%3E%3C/svg%3E");
+}
+
+.cover__tag {
+	position: absolute;
+	top: calc(var(--cover-inset) + 10px);
+	right: calc(var(--cover-inset) + 10px);
+	padding: 1px 8px;
+	border-radius: var(--radius-stamp);
+	background: oklch(100% 0 0 / 0.86);
+	-webkit-backdrop-filter: blur(8px);
+	backdrop-filter: blur(8px);
+	box-shadow: var(--shadow-raised);
+	color: var(--ink);
+	font-family: var(--font-mono);
+	font-size: var(--text-xs);
+	font-weight: 600;
+	letter-spacing: 0.06em;
+}
+
+/* ── Identity ───────────────────────────────────────────── */
+.identity {
+	display: grid;
+	grid-template-columns: calc(var(--coin) + 14px) minmax(0, 1fr);
+	align-content: start;
+	min-height: calc(var(--coin) * var(--coin-drop) + 4px);
+	padding: 10px var(--pad) 0;
+}
+
+.identity__name,
+.identity__since {
+	grid-column: 2;
+}
+
+.identity__name {
+	font-size: var(--text-name);
+	font-weight: 680;
+	line-height: 1.2;
+	letter-spacing: -0.018em;
+	text-wrap: balance;
+	overflow-wrap: anywhere;
+}
+
+/* Focus lands here after a successful 重试: visible for keyboard users only */
+.identity__name:focus {
+	outline: none;
+}
+
+/* The ring keeps clear of the cover above and the date below: a 1px offset,
+   with 4px of side room borrowed from negative margins (no reflow). */
+.identity__name:focus-visible {
+	margin-inline: -4px;
+	padding-inline: 4px;
+	outline: 2px solid var(--focus);
+	outline-offset: 1px;
+	border-radius: 5px;
+}
+
+.identity__since {
+	margin-top: 4px;
+	color: var(--ink-3);
+	font-size: var(--text-sm);
+	font-variant-numeric: tabular-nums;
+}
+
+.identity__since:empty {
+	display: none;
+}
+
+.identity__description {
+	grid-column: 1 / -1;
+	margin-top: 14px;
+	color: var(--ink-2);
+	line-height: 1.65;
+	text-wrap: pretty;
+	overflow-wrap: anywhere;
+}
+
+/* Long names get the full width under the icon instead of a narrow column beside
+   it, at a smaller size and never more than three lines (the full name stays in
+   the heading text and the document title). Medium names only move on narrow cards. */
+.card--identity[data-name="long"] .identity {
+	grid-template-columns: minmax(0, 1fr);
+	padding-top: calc(var(--coin) * var(--coin-drop) + 12px);
+}
+
+.card--identity[data-name="long"] :is(.identity__name, .identity__since) {
+	grid-column: 1;
+}
+
+.card--identity[data-name="long"] .identity__name {
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+	font-size: var(--text-name-long);
+	line-height: 1.25;
+}
+
+@container identity (width < 21rem) {
+	.card--identity[data-name="medium"] .identity {
+		grid-template-columns: minmax(0, 1fr);
+		padding-top: calc(var(--coin) * var(--coin-drop) + 12px);
+	}
+
+	.card--identity[data-name="medium"] :is(.identity__name, .identity__since) {
+		grid-column: 1;
+	}
+}
+
+/* ── Stats strip ────────────────────────────────────────── */
+.gauges {
+	display: grid;
+	grid-auto-flow: column;
+	grid-auto-columns: minmax(0, 1fr);
+	margin: var(--gap-group) var(--pad) 0;
+	border: 1px solid var(--hairline);
+	border-radius: var(--radius-panel);
+	background: var(--inset-soft);
+}
+
+.gauge {
+	display: grid;
+	gap: 1px;
+	min-width: 0;
+	padding: 9px 12px 10px;
+	padding: 9px clamp(10px, 3.5cqi, 14px) 10px;
+}
+
+.gauge + .gauge {
+	border-left: 1px solid var(--hairline);
+}
+
+.gauge__value {
+	justify-self: start;
+	max-width: 100%;
+	overflow-wrap: anywhere;
+	font-size: var(--text-stat);
+	font-weight: 650;
+	line-height: 1.25;
+	letter-spacing: -0.01em;
+	font-variant-numeric: tabular-nums;
+}
+
+.gauge__label {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--ink-3);
+	font-size: var(--text-xs);
+	font-weight: 500;
+	letter-spacing: 0.04em;
+}
+
+/* ── Status light ───────────────────────────────────────── */
+.led {
+	--led: var(--led-offline);
+	position: relative;
+	display: inline-block;
+	flex: none;
+	width: 0.5625rem; /* 9px */
+	height: 0.5625rem;
+	border-radius: 50%;
+	background: var(--led);
+	box-shadow: 0 0 0 2px color-mix(in oklch, var(--led) 18%, transparent);
+}
+
+.led[data-status="online"] {
+	--led: var(--led-online);
+}
+
+/* Idle = crescent, dnd = bar (as in Discord), cut with the ring colour */
+.led:is([data-status="idle"], [data-status="dnd"]) {
+	overflow: hidden;
+}
+
+.led:is([data-status="idle"], [data-status="dnd"])::before {
+	content: "";
+	position: absolute;
+	background: var(--led-cut);
+}
+
+.led[data-status="idle"] {
+	--led: var(--led-idle);
+}
+
+.led[data-status="idle"]::before {
+	top: -14%;
+	left: -14%;
+	width: 66%;
+	height: 66%;
+	border-radius: 50%;
+}
+
+.led[data-status="dnd"] {
+	--led: var(--led-dnd);
+}
+
+.led[data-status="dnd"]::before {
+	top: 50%;
+	left: 22%;
+	width: 56%;
+	height: max(1.5px, 22%);
+	border-radius: 1px;
+	transform: translateY(-50%);
+}
+
+/* A short breathing halo on the two standalone online lights (not on avatars):
+   two beats on arrival (under 5s in total, WCAG 2.2.2), then still. */
+.gauge__label .led[data-status="online"]::after,
+.live__title .led[data-status="online"]::after {
+	content: "";
+	position: absolute;
+	inset: -3px;
+	border-radius: 50%;
+	background: color-mix(in oklch, var(--led) 40%, transparent);
+	opacity: 0;
+	animation: halo 2.2s var(--ease-out) 400ms 2;
+}
+
+/* No numbers yet (first paint, loading, error): the stats light stays grey and
+   still, so its two beats are saved for when real numbers arrive. */
+.card--identity:not([data-state="ready"]) .gauge__label .led {
+	--led: var(--led-offline);
+}
+
+.card--identity:not([data-state="ready"]) .gauge__label .led::after {
+	content: none;
+}
+
+/* ── Keys ───────────────────────────────────────────────── */
+/* Two keys side by side when they fit; rem-based bases make them stack as
+   text grows (narrow phones, 200% text zoom) instead of overflowing. */
+.actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--gap-tight);
+	margin: var(--gap-actions) var(--pad) 0;
+}
+
+.actions > .key {
+	flex: 1 1 7.25rem;
+}
+
+.actions > .key--primary {
+	flex: 1.2 1 7.5rem;
+}
+
+.key {
+	position: relative;
+	isolation: isolate;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 7px;
+	min-height: 2.625rem; /* 42px */
+	padding: 0 16px;
+	border: 1px solid var(--hairline-strong);
+	border-radius: var(--radius-key);
+	background: var(--raised);
+	box-shadow: var(--sheen), 0 1px 2px oklch(40% 0.035 255 / 0.08);
+	color: var(--ink);
+	font: inherit;
+	font-size: var(--text-body);
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-decoration: none;
+	white-space: nowrap;
+	cursor: pointer;
+	user-select: none;
+	-webkit-tap-highlight-color: transparent;
+	transition: transform var(--duration-fast) var(--ease-out);
+}
+
+/* Hover wash lives on its own layer so only opacity animates */
+.key::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: inherit;
+	background: oklch(42% 0.04 255 / 0.06);
+	opacity: 0;
+	transition: opacity var(--duration-fast) ease;
+}
+
+@media (hover: hover) {
+	.key:hover::after {
+		opacity: 1;
+	}
+}
+
+.key:active {
+	transform: translateY(1px) scale(0.985);
+}
+
+.key:focus-visible {
+	outline: 2px solid var(--focus);
+	outline-offset: 2px;
+}
+
+.key--primary {
+	border-color: oklch(36% 0.05 257 / 0.6);
+	background: linear-gradient(180deg, var(--key-hi), var(--key-lo));
+	background-color: var(--key-lo);
+	box-shadow:
+		inset 0 1px 0 oklch(100% 0 0 / 0.14),
+		0 1px 2px oklch(30% 0.04 255 / 0.18),
+		0 4px 12px -6px oklch(30% 0.05 255 / 0.4);
+	color: var(--key-ink);
+}
+
+.key--primary::after {
+	background: oklch(100% 0 0 / 0.09);
+}
+
+/* Small "opens Discord" arrow, drawn after the label */
+.key--primary::before {
+	content: "";
+	order: 1;
+	width: 0.6875rem;
+	height: 0.6875rem;
+	background: currentColor;
+	opacity: 0.75;
+	-webkit-mask: var(--glyph-arrow) center / contain no-repeat;
+	mask: var(--glyph-arrow) center / contain no-repeat;
+	transition: transform var(--duration-fast) var(--ease-out);
+	--glyph-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5 8.5 3.5M4.5 3.5h4v4'/%3E%3C/svg%3E");
+}
+
+@media (hover: hover) {
+	.key--primary:hover::before {
+		transform: translate(1px, -1px);
+	}
+}
+
+/* No invite link: no "opens Discord" arrow on a key that opens nothing */
+a.key--primary:not([href])::before {
+	display: none;
+}
+
+/* Copied: a drawn tick (decorative; the status line carries the announcement) */
+.key[data-copied="true"] {
+	color: var(--ok-ink);
+}
+
+.key[data-copied="true"]::before {
+	content: "";
+	flex: none;
+	width: 0.8125rem;
+	height: 0.8125rem;
+	background: currentColor;
+	-webkit-mask: var(--glyph-tick) center / contain no-repeat;
+	mask: var(--glyph-tick) center / contain no-repeat;
+	--glyph-tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 7.4 2.7 2.6L11 4.4'/%3E%3C/svg%3E");
+}
+
+.key--small {
+	min-height: 2.5rem;
+	padding: 0 14px;
+	font-size: var(--text-sm);
+}
+
+a.key:not([href]),
+.key:disabled {
+	opacity: 0.45;
+	box-shadow: none;
+	cursor: not-allowed;
+	pointer-events: none;
+}
+
+/* 重试 in flight keeps focus, so dim its label — not the element and its focus
+   ring — and show a small spinner as the busy cue (static with reduced motion). */
+button.key[aria-disabled="true"] {
+	color: var(--ink-3);
+	cursor: progress;
+	pointer-events: none;
+}
+
+button.key[aria-disabled="true"]::before {
+	content: "";
+	flex: none;
+	width: 0.75rem;
+	height: 0.75rem;
+	border: 1.5px solid currentColor;
+	border-top-color: transparent;
+	border-radius: 50%;
+	animation: spin 0.8s linear infinite;
+}
+
+.invite-hint {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	justify-content: safe center;
+	gap: 2px 10px;
+	position: relative;
+	min-height: 1.5em;
+	margin: 10px var(--pad) 0;
+	color: var(--ink-3);
+	font-size: var(--text-xs);
+	text-align: center;
+}
+
+/* Nothing to show: collapse the line, but keep the status node rendered so
+   the live region exists before a message is written into it. */
+.invite-hint:has(#invite-text:empty):has(#copy-status:empty):has(#invite-none[hidden]) {
+	min-height: 0;
+	margin-top: 0;
+}
+
+/* No invite in a ready snapshot: say so under the one (dimmed) key that is left */
+.invite-none {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.invite-none::before {
+	content: "";
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--led-offline);
+}
+
+.invite-hint code {
+	min-width: 0;
+	font-family: var(--font-mono);
+	letter-spacing: 0.01em;
+	overflow-wrap: anywhere;
+	user-select: all;
+}
+
+/* Copy feedback is a small toast centred on the rule below, so nothing moves
+   when it appears ("上方链接" still points at the link above it). */
+#copy-status {
+	position: absolute;
+}
+
+#copy-status:not(:empty) {
+	z-index: 1;
+	top: calc(100% + var(--rule-above) + 1px);
+	left: 50%;
+	width: max-content;
+	max-width: 100%;
+	padding: 2px 10px;
+	border: 1px solid oklch(48% 0.11 160 / 0.22);
+	border-radius: 999px;
+	background: oklch(98.4% 0.012 165);
+	box-shadow: 0 4px 12px -6px oklch(38% 0.05 255 / 0.3);
+	color: var(--ok-ink);
+	font-weight: 550;
+	line-height: 1.45; /* unitless: the pill grows with the text */
+	translate: -50% -50%;
+	animation: toast-in 220ms var(--ease-out) both;
+}
+
+#copy-status[data-tone="error"] {
+	border-color: var(--error-line);
+	background: var(--error-bg);
+	color: var(--error-ink);
+}
+
+/* No rule to sit on (error state, server-rendered link): plain text in the flow */
+.card--identity:not([data-state="ready"]) #copy-status:not(:empty) {
+	position: static;
+	translate: none;
+}
+
+/* Large text on a narrow card (em = the card's text size, so this tracks text
+   zoom): the longest message could wrap, so it joins the flow instead of
+   floating over the facts below. */
+@container identity (width < 19em) {
+	#copy-status:not(:empty) {
+		position: static;
+		margin-top: 4px;
+		border-radius: 0.75em;
+		translate: none;
+	}
+}
+
+.card__error {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	margin: 14px var(--pad) 0;
+	padding: 7px 7px 7px 14px;
+	border: 1px solid var(--error-line);
+	border-radius: var(--radius-panel);
+	background: var(--error-bg);
+	color: var(--error-ink);
+	font-size: var(--text-sm);
+	font-weight: 550;
+}
+
+/* ── States that have nothing to show yet ───────────────── */
+.card--identity:not([data-state="ready"]) :is(.groove, .facts, .card__foot) {
+	display: none;
+}
+
+/* While the alert is up, empty dashes and two dead buttons add nothing; a join
+   link the server could still render keeps working (and brings 复制 with it). */
+.card--identity:has(.card__error:not([hidden])) :is(.gauges, .actions:not(:has(a#join[href]))) {
+	display: none;
+}
+
+.card--identity[data-state="loading"] .gauge__value {
+	min-width: 2.5ch;
+	border-radius: 6px;
+	background: oklch(42% 0.03 255 / 0.08);
+	color: transparent;
+	animation: breathe 1.4s ease-in-out infinite;
+}
+
+/* Before app.js has rendered the server's snapshot (it is a deferred module),
+   the live card is already there: give it the same quiet skeleton as the stats
+   strip instead of two bare labels, and hold roughly the final height so the
+   pair does not jump when the content lands. */
+@media (min-width: 47.5rem) {
+	.stage[data-layout="split"]:has(> .card--identity[data-state="loading"]) {
+		min-height: min(45rem, 100dvh - var(--page-pad-block) * 2);
+	}
+
+	/* The identity card's spacer stands in for the facts and shelves to come */
+	.stage[data-layout="split"] .card--identity[data-state="loading"]::after {
+		margin: var(--rule-above) var(--pad) 0;
+		border-radius: var(--radius-panel);
+		background: oklch(42% 0.03 255 / 0.04);
+		animation: breathe 1.4s ease-in-out 400ms infinite;
+	}
+}
+
+.stage:has(> .card--identity[data-state="loading"]) .card--live :is(.voice-list:empty, .well--scroll:has(.member-grid:empty)) {
+	display: block;
+	border-color: transparent;
+	background: oklch(42% 0.03 255 / 0.06);
+	animation: breathe 1.4s ease-in-out infinite;
+}
+
+.stage:has(> .card--identity[data-state="loading"]) .card--live .voice-list:empty {
+	height: 9.5rem;
+}
+
+.stage:has(> .card--identity[data-state="loading"]) .card--live .well--scroll {
+	height: calc(var(--row) * 6.5 + var(--well-pad) * 2 + 2px);
+	animation-delay: 200ms;
+}
+
+/* ── Facts ──────────────────────────────────────────────── */
+.facts {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--gap-facts) 16px;
+	padding-inline: var(--pad);
+}
+
+.facts:empty,
+.groove:has(+ .facts:empty) {
+	display: none;
+}
+
+.fact dt {
+	color: var(--ink-3);
+	font-size: var(--text-xs);
+	letter-spacing: 0.04em;
+}
+
+.fact dd {
+	margin-top: 1px;
+	color: var(--ink);
+	font-size: var(--text-body);
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	overflow-wrap: anywhere;
+}
+
+/* Phrases that must not split ("1,234 次加成"); lines only break between them */
+.nowrap {
+	white-space: nowrap;
+}
+
+/* ── Shelves: games (raised chips) + features (flat tags) ─ */
+/* minmax(0, 1fr): the column may not grow to a chip's no-wrap width, so long
+   game names truncate inside the card instead of pushing it wider. */
+.shelf {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: var(--gap-tight);
+	margin: var(--gap-group) var(--pad) 0;
+}
+
+.chips,
+.stamps {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	min-width: 0;
+}
+
+.chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	max-width: 100%;
+	padding: 3px 11px 3px 3px;
+	border: 1px solid var(--hairline);
+	border-radius: var(--radius-chip);
+	background: var(--raised);
+	box-shadow: var(--sheen), 0 1px 2px oklch(40% 0.035 255 / 0.06);
+	font-size: var(--text-sm);
+	font-weight: 600;
+}
+
+.chip:not(:has(img)) {
+	min-height: 1.875rem;
+	padding-inline: 11px;
+}
+
+.chip img {
+	width: 1.375rem;
+	height: 1.375rem;
+	border-radius: 6px;
+}
+
+.chip span {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.stamp {
+	padding: 2px 8px;
+	border-radius: var(--radius-stamp);
+	background: var(--inset);
+	box-shadow: inset 0 0 0 1px var(--hairline);
+	color: var(--ink-2);
+	font-size: var(--text-xs);
+	font-weight: 500;
+	line-height: 1.6;
+}
+
+.stamp--accent {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	background: var(--brand-tint);
+	box-shadow: inset 0 0 0 1px var(--brand-line);
+	color: var(--brand-ink);
+	font-weight: 600;
+}
+
+.stamp--accent::before {
+	content: "";
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: var(--brand-deep);
+}
+
+/* ── Footer strip ───────────────────────────────────────── */
+.card__foot {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 2px 12px;
+	margin: var(--foot-gap) 0 calc(-1 * var(--pad));
+	padding: 11px var(--pad) 12px;
+	border-top: 1px solid var(--hairline);
+	border-radius: 0 0 calc(var(--radius-card) - 1px) calc(var(--radius-card) - 1px);
+	background: var(--inset-soft);
+	color: var(--ink-3);
+	font-size: var(--text-xs);
+	font-variant-numeric: tabular-nums;
+}
+
+.card__foot:has(time:empty):has(.card__stale[hidden]) {
+	display: none;
+}
+
+.card__stale {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--warn-ink);
+}
+
+.card__stale::before {
+	content: "";
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--warn-dot);
+}
+
+/* ── Live card ──────────────────────────────────────────── */
+.live__head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 4px 12px;
+	min-height: 1.875rem;
+	padding-bottom: 12px;
+	background:
+		linear-gradient(var(--brand), var(--brand)) left bottom / var(--tick) 2px no-repeat,
+		linear-gradient(var(--hairline), var(--hairline)) left bottom / 100% 1px no-repeat;
+}
+
+.live__title {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	font-size: var(--text-title);
+	font-weight: 650;
+	letter-spacing: 0.01em;
+}
+
+.live__sub {
+	color: var(--ink-3);
+	font-size: var(--text-sm);
+	font-variant-numeric: tabular-nums;
+}
+
+.live__section {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr); /* never wider than the card, whatever the min-content */
+	gap: var(--gap-tight);
+	margin-top: 14px;
+}
+
+/* Members: fixed rows (heading, 正在玩, tray, footer) with no row gaps, so a
+   hidden piece leaves no hole and the tray row is the one that stretches. When
+   there is no tray at all, the empty row keeps the footer at the bottom. */
+.live__section--members {
+	grid-template-rows: auto auto minmax(0, 1fr) auto;
+	gap: 0;
+	margin-top: 16px;
+}
+
+.live__section-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px 16px;
+}
+
+.live__section--members > .playing {
+	grid-row: 2;
+	margin-top: var(--gap-tight);
+}
+
+.live__section--members > :is(.well, .live__empty) {
+	grid-row: 3;
+	align-self: start;
+	margin-top: var(--gap-tight);
+}
+
+.live__section--members > .member-more {
+	grid-row: 4;
+}
+
+/* Voice channels: one grouped list; busy rooms are lifted and marked */
+.voice-list {
+	overflow: hidden;
+	border: 1px solid var(--hairline);
+	border-radius: var(--radius-panel);
+	background: var(--inset-soft);
+}
+
+/* No channels / nobody listed: one quiet line instead of an empty box */
+.voice-list:empty,
+.well--scroll:has(.member-grid:empty) {
+	display: none;
+}
+
+.live__empty {
+	padding: 10px 12px;
+	border: 1px dashed var(--hairline-strong);
+	border-radius: var(--radius-panel);
+	color: var(--ink-3);
+	font-size: var(--text-sm);
+	text-align: center;
+}
+
+.voice {
+	position: relative;
+	padding: 6px 12px;
+}
+
+.voice + .voice {
+	border-top: 1px solid var(--hairline);
+}
+
+.voice:not(.voice--empty) {
+	padding-block: 8px 9px;
+	background: var(--raised);
+}
+
+/* Active-room marker: a short brand pill inset from the corners */
+.voice:not(.voice--empty)::before {
+	content: "";
+	position: absolute;
+	top: 10px;
+	bottom: 10px;
+	left: 0;
+	width: 3px;
+	border-radius: 0 3px 3px 0;
+	background: var(--brand);
+}
+
+.voice__head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 1.375rem;
+	font-size: var(--text-sm);
+	font-weight: 600;
+}
+
+.voice__name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	unicode-bidi: isolate;
+}
+
+.voice__count {
+	flex: none;
+	margin-left: auto;
+	color: var(--ink-3);
+	font-size: var(--text-xs);
+	font-weight: 500;
+	font-variant-numeric: tabular-nums;
+}
+
+.voice:not(.voice--empty) .voice__count {
+	padding: 1px 8px;
+	border-radius: 999px;
+	background: var(--brand-tint);
+	box-shadow: inset 0 0 0 1px var(--brand-line);
+	color: var(--brand-ink);
+	font-weight: 600;
+	line-height: 1.5; /* 18px text + 2px = 20px, and grows with the text */
+}
+
+.voice--empty .voice__name {
+	color: var(--ink-3);
+	font-weight: 500;
+}
+
+.voice__members {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 7px;
+	padding-left: 22px;
+}
+
+.voice__member {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	max-width: 100%;
+	min-width: 0;
+	padding: 2px 9px 2px 2px;
+	border: 1px solid var(--hairline);
+	border-radius: 999px;
+	background: oklch(100% 0 0 / 0.95);
+	font-size: var(--text-sm);
+}
+
+.voice__member-name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	unicode-bidi: isolate;
+}
+
+/* Idle channels past the row budget: one disclosure row ("另有 N 个空闲频道") */
+.voice--fold {
+	padding: 0;
+}
+
+.voice-fold__summary {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 2.5rem;
+	padding: 0 12px;
+	color: var(--ink-3);
+	font-size: var(--text-sm);
+	font-weight: 500;
+	list-style: none;
+	cursor: pointer;
+	user-select: none;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.voice-fold__summary::-webkit-details-marker {
+	display: none;
+}
+
+@media (hover: hover) {
+	.voice-fold__summary:hover {
+		color: var(--ink-2);
+	}
+}
+
+.voice-fold__summary:focus-visible {
+	outline: 2px solid var(--focus);
+	outline-offset: -3px;
+	border-radius: var(--radius-panel);
+}
+
+.icon--chevron {
+	width: 0.75rem;
+	height: 0.75rem;
+	transition: transform var(--duration-fast) var(--ease-out);
+	--icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 2.5 8 6l-3.5 3.5'/%3E%3C/svg%3E");
+}
+
+.voice-fold[open] .icon--chevron {
+	transform: rotate(90deg);
+}
+
+.voice-fold__list > .voice {
+	border-top: 1px solid var(--hairline);
+}
+
+/* Mask icons (stroke SVGs as data URIs — CSP img-src allows data:) */
+.icon {
+	flex: none;
+	width: 0.875rem;
+	height: 0.875rem;
+	background: currentColor;
+	-webkit-mask: var(--icon) center / contain no-repeat;
+	mask: var(--icon) center / contain no-repeat;
+}
+
+.icon--speaker {
+	color: var(--ink-3);
+	--icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4 7 9H4v6h3l5 5z'/%3E%3Cpath d='M16 9a4.5 4.5 0 0 1 0 6M18.8 6.2a8.5 8.5 0 0 1 0 11.6'/%3E%3C/svg%3E");
+}
+
+.voice:not(.voice--empty) .icon--speaker {
+	color: var(--ink-2);
+}
+
+.icon--muted,
+.icon--deafened {
+	width: 0.8125rem;
+	height: 0.8125rem;
+	color: var(--error-ink);
+}
+
+.icon--muted {
+	--icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3l18 18M9 9v3a3 3 0 0 0 5.1 2.1M15 9.3V5a3 3 0 0 0-5.7-1.3M19 10v2a7 7 0 0 1-.9 3.4M5 10v2a7 7 0 0 0 11.9 5M12 19v3'/%3E%3C/svg%3E");
+}
+
+.icon--deafened {
+	--icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3l18 18M3 18v-6a9 9 0 0 1 2.6-6.4M9 3.5A9 9 0 0 1 21 12v4M3 14h3v7H5a2 2 0 0 1-2-2zM21 14h-3v3'/%3E%3C/svg%3E");
+}
+
+/* Who is online */
+.status-summary {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 16px;
+	color: var(--ink-2);
+	font-size: var(--text-sm);
+	font-variant-numeric: tabular-nums;
+}
+
+.status-summary li {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.playing {
+	color: var(--ink-3);
+	font-size: var(--text-sm);
+	line-height: 1.55;
+	text-wrap: pretty;
+}
+
+/* One game per unbreakable group (name, ×n, trailing "·"); a name too long
+   for the line ends in "…" while its count and dot stay visible. */
+.playing__game {
+	display: inline-flex;
+	max-width: 100%;
+	white-space: nowrap;
+	vertical-align: bottom;
+}
+
+/* The first game always shares the label's line ("正在玩：" is 4em wide), so
+   the label is never left alone; a long name shortens there instead. */
+.playing > :first-child + .playing__game {
+	max-width: calc(100% - 4.25em);
+}
+
+.playing strong {
+	min-width: 0;
+	overflow: hidden;
+	color: var(--ink);
+	font-weight: 600;
+	text-overflow: ellipsis;
+}
+
+.well {
+	border: 1px solid var(--hairline);
+	border-radius: var(--radius-panel);
+	background: var(--inset);
+}
+
+.well--scroll {
+	position: relative;
+	max-height: calc(var(--row) * 6.5 + var(--well-pad) * 2 + 2px); /* the cut-off row says "scroll me" */
+	container: member-well / inline-size;
+	overflow-y: auto;
+	/* Stacked on phones/tablets: a swipe that reaches the tray's edge carries on
+	   scrolling the page (the split layout contains it, see above). */
+	overscroll-behavior: auto;
+	padding: var(--well-pad);
+	scrollbar-width: thin;
+	scrollbar-color: oklch(60% 0.02 255) transparent; /* thumb 3.5:1 on the tray */
+}
+
+@media (pointer: coarse) {
+	.stage[data-layout] .well--scroll {
+		overscroll-behavior: auto;
+	}
+}
+
+.well--scroll:focus-visible {
+	outline: 2px solid var(--focus);
+	outline-offset: 2px;
+}
+
+/* Edge fades pinned to the scrollport. Their opacity follows the scroll
+   position; with no overflow the timeline is inactive and they stay hidden. */
+.well--scroll::before,
+.well--scroll::after {
+	content: "";
+	position: sticky;
+	z-index: 1;
+	display: block;
+	height: 20px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.well--scroll::before {
+	top: calc(-1 * var(--well-pad));
+	margin: calc(-1 * var(--well-pad)) calc(-1 * var(--well-pad)) calc(var(--well-pad) - 20px);
+	background: linear-gradient(var(--inset) 15%, oklch(96.5% 0.007 252 / 0));
+}
+
+.well--scroll::after {
+	bottom: calc(-1 * var(--well-pad));
+	margin: calc(var(--well-pad) - 20px) calc(-1 * var(--well-pad)) calc(-1 * var(--well-pad));
+	background: linear-gradient(oklch(96.5% 0.007 252 / 0), var(--inset) 85%);
+}
+
+@supports (animation-timeline: scroll()) {
+	.well--scroll::before {
+		animation: edge-in auto linear both;
+		animation-timeline: scroll();
+	}
+
+	.well--scroll::after {
+		animation: edge-out auto linear both;
+		animation-timeline: scroll();
+	}
+}
+
+.member-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+	gap: 0 2px;
+}
+
+.member {
+	position: relative;
+	isolation: isolate;
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	min-width: 0;
+	min-height: var(--row);
+	padding: 3px 8px;
+}
+
+/* Rows are not interactive: a flat tint on hover (mouse only, never sticky
+   after a tap) just helps the eye follow a row. Opacity is all that animates. */
+.member::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: 10px;
+	background: oklch(100% 0 0 / 0.75);
+	opacity: 0;
+	transition: opacity var(--duration-fast) ease;
+}
+
+@media (hover: hover) {
+	.member:hover::before {
+		opacity: 1;
+	}
+}
+
+.member__text {
+	display: grid;
+	min-width: 0;
+}
+
+.member__name,
+.member__activity {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	unicode-bidi: isolate;
+}
+
+.member__name {
+	font-size: var(--text-sm);
+	font-weight: 600;
+	line-height: 1.35;
+}
+
+.member__activity {
+	color: var(--ink-3);
+	font-size: 0.71875rem; /* 11.5px — the one place below the 12px floor */
+	line-height: 1.35;
+}
+
+/* Three columns: win a few pixels per name */
+@container member-well (width >= 25.75rem) {
+	.member {
+		gap: 8px;
+		padding-inline: 6px;
+	}
+
+	.member .avatar {
+		--size: 1.75rem;
+	}
+}
+
+/* Narrow phones: keep two columns, just tighter. 17.125rem = two 8.5rem
+   columns + the 2px gap, the exact point where the base grid drops to one. */
+@container member-well (width < 17.125rem) {
+	.member-grid {
+		grid-template-columns: repeat(auto-fill, minmax(6.75rem, 1fr));
+	}
+
+	.member {
+		gap: 7px;
+		padding-inline: 5px;
+	}
+
+	.member .avatar {
+		--size: 1.75rem;
+	}
+}
+
+/* Footer strip, the twin of the identity card's */
+.member-more {
+	margin: var(--foot-gap) calc(-1 * var(--pad)) calc(-1 * var(--pad));
+	padding: 11px var(--pad) 12px;
+	border-top: 1px solid var(--hairline);
+	border-radius: 0 0 calc(var(--radius-card) - 1px) calc(var(--radius-card) - 1px);
+	background: var(--inset-soft);
+	color: var(--ink-3);
+	font-size: var(--text-xs);
+	font-variant-numeric: tabular-nums;
+}
+
+/* Avatar with status light */
+.avatar {
+	--size: 1.875rem; /* 30px */
+	position: relative;
+	flex: none;
+	width: var(--size);
+	height: var(--size);
+}
+
+.avatar--sm {
+	--size: 1.25rem; /* 20px */
+}
+
+.avatar img,
+.avatar__fallback {
+	width: 100%;
+	height: 100%;
+	border-radius: 50%;
+	object-fit: cover;
+	background: oklch(92% 0.015 250);
+	box-shadow: 0 0 0 1px oklch(40% 0.035 255 / 0.08);
+}
+
+.avatar__fallback {
+	display: grid;
+	place-items: center;
+	color: var(--ink-2);
+	font-size: calc(var(--size) * 0.42);
+	font-weight: 650;
+	line-height: 1;
+}
+
+.avatar .led {
+	position: absolute;
+	right: -2px;
+	bottom: -2px;
+	width: max(8px, calc(var(--size) * 0.36));
+	height: max(8px, calc(var(--size) * 0.36));
+	box-shadow: 0 0 0 2px var(--led-cut);
+}
+
+/* ── Motion ─────────────────────────────────────────────── */
+@keyframes rise {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+}
+
+@keyframes halo {
+	0% {
+		opacity: 0.7;
+		transform: scale(0.6);
+	}
+	70%,
+	100% {
+		opacity: 0;
+		transform: scale(1.5);
+	}
+}
+
+@keyframes toast-in {
+	from {
+		opacity: 0;
+		transform: translateY(3px);
+	}
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(1turn);
+	}
+}
+
+@keyframes breathe {
+	50% {
+		opacity: 0.45;
+	}
+}
+
+@keyframes edge-in {
+	0% {
+		opacity: 0;
+	}
+	6%,
+	100% {
+		opacity: 1;
+	}
+}
+
+@keyframes edge-out {
+	0%,
+	94% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation: none !important;
+		transition: none !important;
+	}
+
+	/* Scroll-linked edge fades are not motion: keep them */
+	@supports (animation-timeline: scroll()) {
+		.well--scroll::before {
+			animation: edge-in auto linear both !important;
+			animation-timeline: scroll() !important;
+		}
+
+		.well--scroll::after {
+			animation: edge-out auto linear both !important;
+			animation-timeline: scroll() !important;
+		}
+	}
+}
+
+/* Less see-through panes for people who ask for it */
+@media (prefers-reduced-transparency: reduce) {
+	:root {
+		--pane-hi: oklch(100% 0 0);
+		--pane-lo: oklch(99.3% 0.003 250);
+		--inset-soft: var(--inset);
+	}
+
+	.cover__tag {
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+		background: oklch(100% 0 0);
+	}
+}
+
+/* Short laptop windows (1366×768, 1920×1080 at 125%, a 13" MacBook Air):
+   tighten the vertical rhythm so the pair fits above the fold as one object. */
+@media (min-width: 47.5rem) and (max-height: 52rem) {
+	:root {
+		--page-pad-block: clamp(8px, 2vh, 24px);
+		--gap-group: 14px;
+		--gap-actions: 12px;
+		--gap-facts: 10px;
+		--rule-above: 0.875rem;
+		--rule-below: 0.75rem;
+		--foot-gap: 14px;
+	}
+
+	.cover .cover__window {
+		aspect-ratio: 4 / 1;
+	}
+}
+
+/* Shorter still (1366×768 with browser bars ≈ 657px): a thinner band and a
+   tighter rhythm, the same proportions one step down. */
+@media (min-width: 47.5rem) and (max-height: 45rem) {
+	:root {
+		--page-pad-block: 8px;
+		--gap-group: 11px;
+		--gap-actions: 10px;
+		--gap-facts: 7px;
+		--rule-above: 0.6875rem;
+		--rule-below: 0.75rem;
+		--foot-gap: 11px;
+	}
+
+	.cover .cover__window {
+		aspect-ratio: 5.2 / 1;
+	}
+
+	.card__foot,
+	.member-more {
+		padding-block: 9px 10px;
+	}
+
+	.live__section {
+		margin-top: 11px;
+	}
+}
+
+/* More contrast on request: hairlines step up to 3.1:1 / 3.5:1 on the pane,
+   and quiet ink to the secondary ink. */
+@media (prefers-contrast: more) {
+	:root {
+		--hairline: oklch(40% 0.03 255 / 0.6);
+		--hairline-strong: oklch(40% 0.03 255 / 0.65);
+		--ink-3: var(--ink-2);
+	}
+}
+
+/* Windows High Contrast forces backgrounds to Canvas, which would erase every
+   mask icon and status light: paint those with system colours instead. The
+   light shapes (dot / crescent / bar) carry the status without hue. */
+@media (forced-colors: active) {
+	.card,
+	.key,
+	.well,
+	.gauges,
+	.voice-list,
+	.live__empty {
+		border: 1px solid CanvasText;
+	}
+
+	.groove,
+	.live__head {
+		border-bottom: 1px solid CanvasText;
+	}
+
+	.icon,
+	.coin:has(.coin__img[hidden]):has(.coin__initial:empty)::after,
+	.card__stale::before,
+	.stamp--accent::before,
+	.invite-none::before {
+		forced-color-adjust: none;
+		background: CanvasText;
+	}
+
+	#copy-status:not(:empty) {
+		border-color: CanvasText;
+	}
+
+	.key--primary::before {
+		forced-color-adjust: none;
+		background: LinkText;
+	}
+
+	/* A dead control reads as one: GrayText, never a live-link colour */
+	a.key:not([href]),
+	.key:disabled {
+		border-color: GrayText;
+		color: GrayText;
+	}
+
+	.key[data-copied="true"]::before {
+		forced-color-adjust: none;
+		background: CanvasText;
+	}
+
+	.led,
+	.led[data-status] {
+		forced-color-adjust: none;
+		--led: CanvasText;
+		--led-cut: Canvas;
+		box-shadow: 0 0 0 2px Canvas;
+	}
+
+	.led:not([data-status]),
+	.led[data-status="offline"] {
+		--led: GrayText;
+	}
+
+	.voice:not(.voice--empty)::before {
+		forced-color-adjust: none;
+		background: Highlight;
+	}
+}

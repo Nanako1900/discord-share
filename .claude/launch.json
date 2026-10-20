@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "wrangler",
+        "dev",
+        "--port",
+        "8787"
+      ],
+      "port": 8787
+    },
+    {
+      "name": "dev-no-widget",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "wrangler",
+        "dev",
+        "--port",
+        "8788",
+        "--persist-to",
+        ".wrangler/state-no-widget",
+        "--var",
+        "GUILD_ID:613425648685547541",
+        "--var",
+        "INVITE_CODE:discord-developers",
+        "--var",
+        "SITE_NAME:Discord Developers"
+      ],
+      "port": 8788
+    }
+  ]
+}

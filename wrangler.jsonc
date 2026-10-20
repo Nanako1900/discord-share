@@ -1,0 +1,22 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "discord-share",
+	"main": "./src/index.ts",
+	"compatibility_date": "2026-10-20",
+	"workers_dev": false,
+	"routes": [{ "pattern": "discord.nanako.org", "custom_domain": true }],
+	"assets": {
+		"directory": "./public/",
+		"binding": "ASSETS",
+		// Worker runs first only for the HTML entry (meta injection) and the API
+		"run_worker_first": ["/", "/api/*"]
+	},
+	"vars": {
+		"GUILD_ID": "1114391825336250432",
+		// Optional permanent invite code (discord.gg/<code>). Empty → use the widget's rotating instant invite.
+		"INVITE_CODE": "",
+		"SITE_URL": "https://discord.nanako.org",
+		"SITE_NAME": "Nanako's Community"
+	},
+	"observability": { "enabled": true }
+}

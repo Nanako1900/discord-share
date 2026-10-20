@@ -1,0 +1,17 @@
+/*
+  Strict-Transport-Security: max-age=31536000
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# Unversioned file names: always revalidate (cheap 304 via ETag) so a deploy
+# never pairs fresh HTML with stale CSS/JS.
+/styles.css
+  Cache-Control: no-cache
+
+/app.js
+  Cache-Control: no-cache
+
+/favicon.svg
+  Cache-Control: public, max-age=86400

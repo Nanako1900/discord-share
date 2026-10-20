@@ -1,0 +1,64 @@
+{
+  "id": "1114391825336250432",
+  "name": "Nanako‘s Community",
+  "instant_invite": "https://discord.com/invite/XmuHsQYX",
+  "channels": [
+    { "id": "1433123674788986920", "name": "Nanako's Room", "position": 3 },
+    { "id": "1159618767396032542", "name": "Room 1", "position": 0 },
+    { "id": "1174161623129268315", "name": "Room 2", "position": 1 }
+  ],
+  "members": [
+    {
+      "id": "0",
+      "username": "Alice",
+      "discriminator": "0000",
+      "avatar": null,
+      "status": "online",
+      "avatar_url": "https://cdn.discordapp.com/widget-avatars/aaa/bbb",
+      "game": { "name": "Minecraft" },
+      "channel_id": "1159618767396032542",
+      "deaf": false,
+      "mute": false,
+      "self_deaf": false,
+      "self_mute": true,
+      "suppress": false
+    },
+    {
+      "id": "1",
+      "username": "</script><img src=x onerror=alert(1)>",
+      "discriminator": "0000",
+      "avatar": null,
+      "status": "dnd",
+      "avatar_url": "javascript:alert(1)"
+    },
+    {
+      "id": "2",
+      "username": "Bob",
+      "discriminator": "0000",
+      "avatar": null,
+      "status": "idle",
+      "avatar_url": "https://cdn.discordapp.com/widget-avatars/ccc/ddd",
+      "channel_id": "1433123674788986920",
+      "deaf": false,
+      "mute": false,
+      "self_deaf": true,
+      "self_mute": true,
+      "suppress": false
+    },
+    {
+      "id": "3",
+      "username": "Carol",
+      "discriminator": "0000",
+      "avatar": null,
+      "status": "online",
+      "avatar_url": "https://cdn.discordapp.com/widget-avatars/eee/fff",
+      "channel_id": "1159618767396032542",
+      "deaf": false,
+      "mute": true,
+      "self_deaf": false,
+      "self_mute": false,
+      "suppress": false
+    }
+  ],
+  "presence_count": 20
+}
