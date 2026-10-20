@@ -140,15 +140,18 @@ async function request(fetcher: Fetcher, url: string): Promise<Response> {
 	}
 }
 
-/** Milliseconds to wait before retrying a 429, or null for a global limit / unknown wait. */
+/**
+ * Milliseconds to wait before retrying a 429, or null when unknown. The body's
+ * retry_after wins: Discord's Retry-After header can contradict it (seen: 300 vs 0.3).
+ * Global limits are retried too — on shared egress IPs they are short.
+ */
 function retryWaitMs(headers: Headers, body: string): number | null {
 	let parsed: unknown = null;
 	try {
 		parsed = JSON.parse(body);
 	} catch {
-		// Non-JSON 429 (e.g. an edge block page): fall back to the Retry-After header.
+		// Non-JSON 429 (e.g. an edge block page): use the Retry-After header instead.
 	}
-	if (isObject(parsed) && parsed.global === true) return null;
 	const seconds =
 		isObject(parsed) && typeof parsed.retry_after === "number" ? parsed.retry_after : Number(headers.get("Retry-After") ?? NaN);
 	return Number.isFinite(seconds) && seconds >= 0 ? Math.ceil(seconds * 1000) : null;

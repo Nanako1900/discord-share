@@ -60,12 +60,22 @@ describe("short rate-limit retries", () => {
 		expect(fetcher).toHaveBeenCalledTimes(1);
 	});
 
-	it("does not retry a global rate limit", async () => {
-		const fetcher = routeFetcher({
-			invite: () => json({ message: "You are being rate limited.", retry_after: 0.01, global: true }, 429),
-		});
-		await expect(fetchInvite("XmuHsQYX", fetcher)).rejects.toMatchObject({ status: 429 });
-		expect(fetcher).toHaveBeenCalledTimes(1);
+	it("retries a short global rate limit too (shared egress IPs hit it)", async () => {
+		const responses = [json({ message: "You are being rate limited.", retry_after: 0.01, global: true }, 429), json(invite)];
+		const fetcher = routeFetcher({ invite: () => responses.shift() ?? json({}, 500) });
+		await expect(fetchInvite("XmuHsQYX", fetcher)).resolves.toMatchObject({ code: "XmuHsQYX" });
+		expect(fetcher).toHaveBeenCalledTimes(2);
+	});
+
+	it("prefers the body's retry_after over a contradictory Retry-After header", async () => {
+		const limited = () =>
+			new Response(JSON.stringify({ message: "You are being rate limited.", retry_after: 0.01, global: true }), {
+				status: 429,
+				headers: { "Retry-After": "300", "Content-Type": "application/json" },
+			});
+		const responses = [limited(), json(widget)];
+		const fetcher = routeFetcher({ widget: () => responses.shift() ?? json({}, 500) });
+		await expect(fetchWidget(GUILD_ID, fetcher)).resolves.toMatchObject({ presence_count: 20 });
 	});
 
 	it("also retries the widget request", async () => {
