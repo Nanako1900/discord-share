@@ -123,10 +123,24 @@ function request(fetcher: Fetcher, url: string): Promise<Response> {
 const isObject = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null;
 
+const ERROR_BODY_EXCERPT = 200;
+
+/** An HTTP failure with enough detail in the message (rate-limit headers, body excerpt) to diagnose from logs. */
+async function httpError(what: string, res: Response): Promise<DiscordApiError> {
+	const details = [
+		res.headers.get("Retry-After") && `retry-after=${res.headers.get("Retry-After")}`,
+		res.headers.get("X-RateLimit-Scope") && `scope=${res.headers.get("X-RateLimit-Scope")}`,
+	].filter(Boolean);
+	const body = await res.text().catch(() => "");
+	const excerpt = body.replace(/\s+/g, " ").trim().slice(0, ERROR_BODY_EXCERPT);
+	const suffix = [details.join(" "), excerpt && `body: ${excerpt}`].filter(Boolean).join("; ");
+	return new DiscordApiError(`${what} failed with HTTP ${res.status}${suffix ? ` (${suffix})` : ""}`, res.status);
+}
+
 export async function fetchInvite(code: string, fetcher: Fetcher): Promise<DiscordInvite> {
 	const res = await request(fetcher, `${API_BASE}/v10/invites/${encodeURIComponent(code)}?with_counts=true`);
 	if (!res.ok) {
-		throw new DiscordApiError(`Invite request failed with HTTP ${res.status}`, res.status);
+		throw await httpError("Invite request", res);
 	}
 
 	const body: unknown = await res.json();
@@ -145,7 +159,7 @@ export async function fetchWidget(guildId: string, fetcher: Fetcher): Promise<Di
 		if (isObject(body) && body.code === WIDGET_DISABLED_CODE) return null;
 	}
 	if (!res.ok) {
-		throw new DiscordApiError(`Widget request failed with HTTP ${res.status}`, res.status);
+		throw await httpError("Widget request", res);
 	}
 
 	const body: unknown = await res.json();
@@ -159,7 +173,7 @@ export async function fetchWidget(guildId: string, fetcher: Fetcher): Promise<Di
 export async function fetchApplication(id: string, fetcher: Fetcher): Promise<DiscordApplication> {
 	const res = await request(fetcher, `${API_BASE}/v10/applications/${encodeURIComponent(id)}/rpc`);
 	if (!res.ok) {
-		throw new DiscordApiError(`Application request failed with HTTP ${res.status}`, res.status);
+		throw await httpError("Application request", res);
 	}
 
 	const body: unknown = await res.json();

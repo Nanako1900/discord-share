@@ -82,6 +82,28 @@ describe("fetchWidget", () => {
 		await expect(fetchWidget(GUILD_ID, fetcher)).rejects.toMatchObject({ status: 429 });
 	});
 
+	it("includes rate-limit details and a bounded body excerpt in the error message", async () => {
+		const body = { message: "You are being rate limited.", retry_after: 3.5, global: true, pad: "x".repeat(1000) };
+		const fetcher = routeFetcher({
+			widget: () =>
+				new Response(JSON.stringify(body), {
+					status: 429,
+					headers: { "Retry-After": "4", "X-RateLimit-Scope": "shared", "Content-Type": "application/json" },
+				}),
+		});
+		const error = await fetchWidget(GUILD_ID, fetcher).then(
+			() => {
+				throw new Error("expected a rejection");
+			},
+			(e: unknown) => e as Error,
+		);
+		expect(error.message).toMatch(/HTTP 429/);
+		expect(error.message).toMatch(/retry-after=4/);
+		expect(error.message).toMatch(/scope=shared/);
+		expect(error.message).toMatch(/You are being rate limited/);
+		expect(error.message.length).toBeLessThan(400);
+	});
+
 	it("rejects payloads without member/channel arrays", async () => {
 		const fetcher = routeFetcher({ widget: () => json({ id: GUILD_ID, members: "nope" }) });
 		await expect(fetchWidget(GUILD_ID, fetcher)).rejects.toBeInstanceOf(DiscordApiError);
