@@ -1,3 +1,5 @@
+import { sleep } from "./async";
+
 /** Minimal fetch signature so tests can inject a fake without touching globals. */
 export type Fetcher = (url: string, init?: RequestInit) => Promise<Response>;
 
@@ -111,13 +113,45 @@ const MAX_GAME_LOOKUPS = 3;
 const SNOWFLAKE_RE = /^\d{17,20}$/;
 const INVITE_URL_CODE_RE = /^https:\/\/(?:discord\.gg|discord\.com\/invite)\/([A-Za-z0-9-]+)$/;
 
-function request(fetcher: Fetcher, url: string): Promise<Response> {
-	return fetcher(url, {
-		headers: { Accept: "application/json", "User-Agent": USER_AGENT },
-		// Workers rejects "error"; with "manual" a 3xx is simply !ok and treated as a failure.
-		redirect: "manual",
-		signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-	});
+/** Short per-route 429s are common on Cloudflare's shared egress IPs (retry_after ≈ 1s). */
+const MAX_RATE_LIMIT_RETRIES = 2;
+
+/**
+ * GET with a total budget of REQUEST_TIMEOUT_MS, retries included: a 429 whose
+ * retry_after fits in the remaining budget is waited out and retried (at most twice).
+ */
+async function request(fetcher: Fetcher, url: string): Promise<Response> {
+	const deadline = Date.now() + REQUEST_TIMEOUT_MS;
+	for (let attempt = 0; ; attempt++) {
+		const res = await fetcher(url, {
+			headers: { Accept: "application/json", "User-Agent": USER_AGENT },
+			// Workers rejects "error"; with "manual" a 3xx is simply !ok and treated as a failure.
+			redirect: "manual",
+			signal: AbortSignal.timeout(Math.max(1, deadline - Date.now())),
+		});
+		if (res.status !== 429 || attempt >= MAX_RATE_LIMIT_RETRIES) return res;
+
+		const text = await res.text().catch(() => "");
+		const waitMs = retryWaitMs(res.headers, text);
+		if (waitMs === null || Date.now() + waitMs >= deadline) {
+			return new Response(text, { status: res.status, statusText: res.statusText, headers: res.headers });
+		}
+		await sleep(waitMs);
+	}
+}
+
+/** Milliseconds to wait before retrying a 429, or null for a global limit / unknown wait. */
+function retryWaitMs(headers: Headers, body: string): number | null {
+	let parsed: unknown = null;
+	try {
+		parsed = JSON.parse(body);
+	} catch {
+		// Non-JSON 429 (e.g. an edge block page): fall back to the Retry-After header.
+	}
+	if (isObject(parsed) && parsed.global === true) return null;
+	const seconds =
+		isObject(parsed) && typeof parsed.retry_after === "number" ? parsed.retry_after : Number(headers.get("Retry-After") ?? NaN);
+	return Number.isFinite(seconds) && seconds >= 0 ? Math.ceil(seconds * 1000) : null;
 }
 
 const isObject = (value: unknown): value is Record<string, unknown> =>

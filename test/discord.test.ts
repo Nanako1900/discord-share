@@ -36,6 +36,46 @@ function routeFetcher(routes: { invite?: Route; widget?: Route; application?: Ro
 
 const allOk = () => routeFetcher({ invite: () => json(invite), widget: () => json(widget), application: () => json(application) });
 
+describe("short rate-limit retries", () => {
+	const rateLimited = (retryAfterSeconds: number) =>
+		json({ message: "You are being rate limited.", retry_after: retryAfterSeconds, global: false }, 429);
+
+	it("retries a 429 after the advertised short wait and succeeds", async () => {
+		const responses = [rateLimited(0.01), rateLimited(0.01), json(invite)];
+		const fetcher = routeFetcher({ invite: () => responses.shift() ?? json({}, 500) });
+
+		await expect(fetchInvite("XmuHsQYX", fetcher)).resolves.toMatchObject({ code: "XmuHsQYX" });
+		expect(fetcher).toHaveBeenCalledTimes(3);
+	});
+
+	it("gives up after two retries", async () => {
+		const fetcher = routeFetcher({ invite: () => rateLimited(0.01) });
+		await expect(fetchInvite("XmuHsQYX", fetcher)).rejects.toMatchObject({ status: 429 });
+		expect(fetcher).toHaveBeenCalledTimes(3);
+	});
+
+	it("does not wait out a long rate limit", async () => {
+		const fetcher = routeFetcher({ invite: () => rateLimited(30) });
+		await expect(fetchInvite("XmuHsQYX", fetcher)).rejects.toMatchObject({ status: 429 });
+		expect(fetcher).toHaveBeenCalledTimes(1);
+	});
+
+	it("does not retry a global rate limit", async () => {
+		const fetcher = routeFetcher({
+			invite: () => json({ message: "You are being rate limited.", retry_after: 0.01, global: true }, 429),
+		});
+		await expect(fetchInvite("XmuHsQYX", fetcher)).rejects.toMatchObject({ status: 429 });
+		expect(fetcher).toHaveBeenCalledTimes(1);
+	});
+
+	it("also retries the widget request", async () => {
+		const responses = [rateLimited(0.01), json(widget)];
+		const fetcher = routeFetcher({ widget: () => responses.shift() ?? json({}, 500) });
+		await expect(fetchWidget(GUILD_ID, fetcher)).resolves.toMatchObject({ presence_count: 20 });
+		expect(fetcher).toHaveBeenCalledTimes(2);
+	});
+});
+
 describe("fetchInvite", () => {
 	it("requests counts for the encoded invite code with a timeout and user agent", async () => {
 		const fetcher = routeFetcher({ invite: () => json(invite) });
